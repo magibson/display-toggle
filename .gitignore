@@ -1,0 +1,6 @@
+.DS_Store
+.build/
+*.swp
+.display-toggle-state
+LAUNCH-PLAN.md
+FEATURE-EXPANSION-REPORT.md

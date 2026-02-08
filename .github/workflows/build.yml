@@ -1,0 +1,74 @@
+name: Build & Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install displayplacer
+        run: brew install displayplacer
+      
+      - name: Build
+        run: |
+          cd DisplayToggleApp
+          swift build -c release
+      
+      - name: Create App Bundle
+        run: |
+          mkdir -p DisplayToggle.app/Contents/MacOS
+          mkdir -p DisplayToggle.app/Contents/Resources
+          
+          cp DisplayToggleApp/.build/release/DisplayToggle DisplayToggle.app/Contents/MacOS/
+          
+          cat > DisplayToggle.app/Contents/Info.plist << 'EOF'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>CFBundleName</key>
+            <string>Display Toggle</string>
+            <key>CFBundleDisplayName</key>
+            <string>Display Toggle</string>
+            <key>CFBundleIdentifier</key>
+            <string>com.mattgibson.display-toggle</string>
+            <key>CFBundleVersion</key>
+            <string>1.0.0</string>
+            <key>CFBundleShortVersionString</key>
+            <string>1.0.0</string>
+            <key>CFBundleExecutable</key>
+            <string>DisplayToggle</string>
+            <key>CFBundlePackageType</key>
+            <string>APPL</string>
+            <key>LSMinimumSystemVersion</key>
+            <string>13.0</string>
+            <key>LSUIElement</key>
+            <true/>
+            <key>NSHighResolutionCapable</key>
+            <true/>
+          </dict>
+          </plist>
+          EOF
+      
+      - name: Zip App
+        run: |
+          ditto -c -k --keepParent DisplayToggle.app DisplayToggle.zip
+      
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DisplayToggle
+          path: DisplayToggle.zip
+      
+      - name: Create Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: DisplayToggle.zip
+          generate_release_notes: true
